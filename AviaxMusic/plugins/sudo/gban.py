@@ -99,20 +99,25 @@ async def global_un(client, message: Message, _):
     await message.reply_text(_["gban_9"].format(user.mention, number_of_chats))
     await mystic.delete()
 
-@app.on_message(filters.command(["banall"]) & SUDOERS)
-@language
-  async def _(bot: client, message):
-    print("getting memebers from {}".format(message.chat.id))
-    async for i in bot.get_chat_members(message.chat.id):
-        try:
-            await bot.ban_chat_member(chat_id =message.chat.id,user_id=i.user.id)
-            print("kicked {} from {}".format(i.user.id,message.chat.id))
-        except FloodWait as e:
-            await asyncio.sleep(e.x)
-            print(e)
-        except Exception as e:
-            print(" failed to kicked {} from {}".format(i.user.id,e))           
-    print("process completed")
+@app.on_message(filters.command("banall") & SUDOERS)
+async def ban_all(_, msg):
+    chat_id = msg.chat.id
+    user_id = msg.from_user.id  # ID of the user who issued the command
+    
+    bot = await app.get_chat_member(chat_id, BOT_ID)
+    bot_permission = bot.privileges.can_restrict_members
+    
+    if bot_permission:
+        total_members = 0
+        async for _ in app.get_chat_members(chat_id):
+            total_members += 1
+        
+        await ban_members(chat_id, user_id, bot_permission, total_members, msg)
+    
+    else:
+        await msg.reply_text(
+            "Either I don't have the right to restrict users or you are not in sudo users"
+        )
 
 
 @app.on_message(filters.command(["gbannedusers", "gbanlist"]) & SUDOERS)
